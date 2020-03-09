@@ -18,7 +18,7 @@ from ..utils import (
 
 class LimelightBaseIE(InfoExtractor):
     _PLAYLIST_SERVICE_URL = 'http://production-ps.lvp.llnw.net/r/PlaylistService/%s/%s/%s'
-    _API_URL = 'http://api.video.limelight.com/rest/organizations/%s/%s/%s/%s.json'
+    _API_URL = 'http://api.video.limelight.com/rest/v3/organizations/%s/%s/%s/%s.json'
 
     @classmethod
     def _extract_urls(cls, webpage, source_url):
@@ -86,7 +86,10 @@ class LimelightBaseIE(InfoExtractor):
 
     def _extract(self, item_id, pc_method, mobile_method, meta_method, referer=None):
         pc = self._call_playlist_service(item_id, pc_method, referer=referer)
-        metadata = self._call_api(pc['orgId'], item_id, meta_method)
+        #metadata = self._call_api(pc['orgId'], item_id, meta_method)
+        metadata = {}
+        metadata['media_id'] = item_id
+        metadata['title'] = pc.get('title') or 'no title found'
         mobile = self._call_playlist_service(item_id, mobile_method, fatal=False, referer=referer)
         return pc, mobile, metadata
 
