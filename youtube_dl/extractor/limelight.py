@@ -18,7 +18,9 @@ from ..utils import (
 
 class LimelightBaseIE(InfoExtractor):
     _PLAYLIST_SERVICE_URL = 'http://production-ps.lvp.llnw.net/r/PlaylistService/%s/%s/%s'
-    _API_URL = 'http://api.video.limelight.com/rest/v3/organizations/%s/%s/%s/%s.json'
+    # _API_URL is deprecated and its replacement needs authentication (possibly from the uploading organization itself)
+    # see issue at https://github.com/ytdl-org/youtube-dl/issues/24255 for more information
+    _API_URL = 'http://api.video.limelight.com/rest/organizations/%s/%s/%s/%s.json' 
 
     @classmethod
     def _extract_urls(cls, webpage, source_url):
@@ -79,6 +81,7 @@ class LimelightBaseIE(InfoExtractor):
                 raise ExtractorError(error, expected=True)
             raise
 
+    # this function is deprecated
     def _call_api(self, organization_id, item_id, method):
         return self._download_json(
             self._API_URL % (organization_id, self._API_PATH, item_id, method),
@@ -87,10 +90,12 @@ class LimelightBaseIE(InfoExtractor):
     def _extract(self, item_id, pc_method, mobile_method, meta_method, referer=None):
         pc = self._call_playlist_service(item_id, pc_method, referer=referer)
         #metadata = self._call_api(pc['orgId'], item_id, meta_method)
-        metadata = {}
-        metadata['media_id'] = item_id
-        metadata['title'] = pc.get('title') or 'no title found'
+        metadata = {} #since the api call is deprecated, create a fake object here
         mobile = self._call_playlist_service(item_id, mobile_method, fatal=False, referer=referer)
+        #metadata needs to have a 'media_id' and 'title' for the plugin to work
+        metadata['media_id'] = item_id #'media_id' is the current item_id
+        metadata['title'] = pc.get('title') or mobile.get('title') or 'no title found' #'title' might be found in pc or mobile, also provide a fallback
+        #'title' and all other metadata should be set (overwritten) properly by the calling plugin by using the '_type' = 'url_transparent' entry in their return data
         return pc, mobile, metadata
 
     def _extract_info(self, streams, mobile_urls, properties):
